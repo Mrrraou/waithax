@@ -1,0 +1,10 @@
+*~
+*.3ds
+*.cia
+*.smdh
+*.3dsx
+*.elf
+*.bat
+*.layout
+Thumbs.db
+build/
