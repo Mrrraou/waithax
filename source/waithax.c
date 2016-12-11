@@ -25,7 +25,7 @@ static bool waithax_kernel11_backdoor(KSemaphore *this, void *thread)
 static void waithax_kernel11_setup_step1(KSemaphore *this)
 {
 	// Turn interrupts off
-    __asm__ volatile("cpsid aif");
+	__asm__ volatile("cpsid aif");
 
 	// Backup the KObjectLink from the hax semaphore location
 	memcpy(&g_backup_data, this, sizeof(KSemaphore));
@@ -49,7 +49,7 @@ static void waithax_kernel11_setup_step1(KSemaphore *this)
 static void waithax_kernel11_setup_step2(void)
 {
 	// Turn interrupts off
-    __asm__ volatile("cpsid aif");
+	__asm__ volatile("cpsid aif");
 
 	// Restore KObjectLink on the hax semaphore location
 	memcpy(g_hax_ksemaphore, &g_backup_data, sizeof(KSemaphore));

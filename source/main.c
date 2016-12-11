@@ -20,8 +20,8 @@ static u32 g_original_pid;
 
 static void K_PatchPID(void)
 {
-    // Turn interrupts off
-    __asm__ volatile("cpsid aif");
+	// Turn interrupts off
+	__asm__ volatile("cpsid aif");
 
 	u8 *proc = CURRENT_KPROCESS;
 	u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
@@ -29,13 +29,13 @@ static void K_PatchPID(void)
 	g_original_pid = *pidPtr;
 
 	// We're now PID zero, all we have to do is reinitialize the service manager in user-mode.
-    *pidPtr = 0;
+	*pidPtr = 0;
 }
 
 static void K_RestorePID(void)
 {
-    // Turn interrupts off
-    __asm__ volatile("cpsid aif");
+	// Turn interrupts off
+	__asm__ volatile("cpsid aif");
 
 	u8 *proc = CURRENT_KPROCESS;
 	u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
@@ -46,32 +46,29 @@ static void K_RestorePID(void)
 
 int main(int argc, char **argv)
 {
-    Handle amHandle = 0;
-    Result res;
-    bool success = false;
+	Handle amHandle = 0;
+	Result res;
+	bool success = false;
 
-    gfxInitDefault();
-    consoleInit(GFX_TOP, NULL);
+	gfxInitDefault();
+	consoleInit(GFX_TOP, NULL);
 	nsInit();
 	aptInit();
-
-	//osSetSpeedupEnable(true);
-	//APT_SetAppCpuTimeLimit(30);
 
 	APT_CheckNew3DS(&g_is_new3ds);
 	printf("System type: %s\n", g_is_new3ds ? "New" : "Old");
 
-    // This one should fail
-    res = srvGetServiceHandleDirect(&amHandle, "am:u");
-    printf("am:u 1st try: res=%08lx handle=%08lx\n", res, amHandle);
-    if(amHandle)
-        svcCloseHandle(amHandle);
+	// This one should fail
+	res = srvGetServiceHandleDirect(&amHandle, "am:u");
+	printf("am:u 1st try: res=%08lx handle=%08lx\n", res, amHandle);
+	if(amHandle)
+		svcCloseHandle(amHandle);
 
-    // Run the exploit
+	// Run the exploit
 	printf("Running exploit\n\n");
-    success = waithax_run();
+	success = waithax_run();
 
-    printf("\nExploit returned: %s\n", success ? "Success!" : "Failure.");
+	printf("\nExploit returned: %s\n", success ? "Success!" : "Failure.");
 	if(!success)
 		goto end;
 
@@ -88,28 +85,28 @@ int main(int argc, char **argv)
 	printf("Cleaning up\n");
 	waithax_cleanup();
 
-    // This one hopefully won't
-    res = srvGetServiceHandleDirect(&amHandle, "am:u");
-    printf("am:u 2nd try: res=%08lx handle=%08lx\n\n", res, amHandle);
-    if(amHandle)
-        svcCloseHandle(amHandle);
+	// This one hopefully won't
+	res = srvGetServiceHandleDirect(&amHandle, "am:u");
+	printf("am:u 2nd try: res=%08lx handle=%08lx\n\n", res, amHandle);
+	if(amHandle)
+		svcCloseHandle(amHandle);
 
 end:
-    printf("Press START to exit.\n");
+	printf("Press START to exit.\n");
 
-    while(aptMainLoop())
+	while(aptMainLoop())
 	{
-        hidScanInput();
-        if(hidKeysDown() & KEY_START)
-            break;
+		hidScanInput();
+		if(hidKeysDown() & KEY_START)
+			break;
 
-        gfxFlushBuffers();
-        gfxSwapBuffers();
-        gspWaitForVBlank();
-    }
+		gfxFlushBuffers();
+		gfxSwapBuffers();
+		gspWaitForVBlank();
+	}
 
 	aptExit();
 	nsExit();
-    gfxExit();
-    return 0;
+	gfxExit();
+	return 0;
 }
