@@ -19,4 +19,5 @@ typedef struct KSemaphore {
 
 bool waithax_run(void);
 void waithax_cleanup(void);
+void waithax_debug(bool enabled);
 void waithax_backdoor(void (*method)(void));

@@ -64,6 +64,11 @@ int main(int argc, char **argv)
 	if(amHandle)
 		svcCloseHandle(amHandle);
 
+	// Uncomment this to use svcBackdoor instead of waiting for the refcount to
+	// be overflown. This needs svcBackdoor to be re-implemented on 11.0+ and
+	// the SVC access tables or table checks to be patched.
+	//waithax_debug(true);
+
 	// Run the exploit
 	printf("Running exploit\n\n");
 	success = waithax_run();

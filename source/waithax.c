@@ -15,6 +15,13 @@ static void* g_fake_ksemaphore_vtable[KSEMAPHORE_VTABLESIZE / sizeof(void*)];
 static void (*g_backdoor_method)(void);
 static u32 g_exploit_result = 0;
 
+static bool g_debug_mode = false;
+
+
+static void K_Debug_PatchRefcount(KSemaphore *semaphore, u32 value)
+{
+	semaphore->refCount = value;
+}
 
 static bool waithax_kernel11_backdoor(KSemaphore *this, void *thread)
 {
@@ -135,7 +142,10 @@ bool waithax_run(void)
 
 
 	// Setup the refcount
-	waithax_setRefCount(sHax, 0U);
+	if(g_debug_mode)
+		svc_7b(K_Debug_PatchRefcount, g_hax_ksemaphore, 0U);
+	else
+		waithax_setRefCount(sHax, 0U);
 
 
 	// Free the "vtable" KSemaphore
@@ -176,6 +186,11 @@ bool waithax_run(void)
 void waithax_cleanup(void)
 {
 	svcCloseHandle(g_backdoor_semaphore);
+}
+
+void waithax_debug(bool enabled)
+{
+	g_debug_mode = enabled;
 }
 
 void waithax_backdoor(void (*method)(void))
