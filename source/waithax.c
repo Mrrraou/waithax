@@ -49,6 +49,10 @@ static void waithax_kernel11_setup_step1(KSemaphore *this)
 	// the current userland process' memory
 	g_backdoor_ksemaphore->vtable = g_fake_ksemaphore_vtable;
 
+	// Increment the refcount to not cause an unwanted deallocation when
+	// WaitSynchronization1 terminates.
+	this->refCount++;
+
 	// Write the exploit result to validate the kernel code execution
 	g_exploit_result = 0xcafebabe;
 }

