@@ -11,19 +11,26 @@ Only tested on my 10.3 New3DS, but I don't see why it would fail on other consol
 Exploit written in less than a day. Finding the strat took more time.
 No one really seemed to care about doing it apparently...
 
-## How to use
+## How to use, for users
+
+Use [the latest release](https://github.com/Mrrraou/waithax/releases) or build the app yourself.
+
+Then, run the .3dsx, wait for the exploit to be done, and run your homebrew of choice that needs elevated privileges (can be yellows8's 3ds_dsiwarehax_installer, for example).
+
+If you are getting a freeze/crash on the Homebrew Launcher when running it, please update your Homebrew Launcher.
+
+## How to use, for developers
 
 Please check the `main.c` file in the `source` folder for information on how to use this implementation in your own application.
+If you want to use this as a library, you just need `waithax.c`, `utils.s` and their headers.
+
 Take note that this implementation does not patch the SVC call access table, nor the process PID on its own.
-However, an helper method is given to run your own kernel mode code after running the exploit. This method *sort of* acts like svcBackdoor; but the given code will be run with the SVC-mode stack, instead of the userland caller thread stack.
+However, an helper method is given to run your own kernel mode code after running the exploit.
+This method *sort of* acts like svcBackdoor; but the given code will be run with the SVC-mode stack, instead of the userland caller thread stack.
 
 ## Estimated time for running the exploit
 
-Takes around 20 minutes for New3DS, and around 1 hour for Old3DS.
-
-## Known issues
-
- - Crash in PM when rebooting the console / running another homebrew / exiting to Home Menu (probably due to some invalid handle or something). Minor issue.
+Takes around 25 minutes for New3DS (should), and around 1 hour and 10 minutes for Old3DS.
 
 ## Credits
 

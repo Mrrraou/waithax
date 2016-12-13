@@ -103,6 +103,14 @@ int main(int argc, char **argv)
 	nsInit();
 	aptInit();
 
+	// Enables the New3DS speedup. Not being done inside waithax_run because
+	// some app using this waithax implementation as a lib would want to not
+	// have that speedup. Anyone wanting to use waithax in their application
+	// should take note to not forget to enable this to speedup the exploit on
+	// New3DS hardware.
+	// Can not enable the speedup on some environments, for unknown reasons yet.
+	osSetSpeedupEnable(true);
+
 	APT_CheckNew3DS(&g_is_new3ds);
 	printf("System type: %s\n", g_is_new3ds ? "New" : "Old");
 
