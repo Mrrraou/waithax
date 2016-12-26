@@ -89,6 +89,11 @@ static void waithax_setRefCount(Handle handle, u32 value)
 
 	u32 bulkLoop = loop / 0xFF;
 	u32 individualLoop = loop % 0xFF;
+	
+	u64 startTime = osGetTime();
+	// how many seconds are left and how many have elapsed
+	float left, elapsed;
+	u64 timeLeft, timeElapsed;
 
 	for(u32 i = 0; i < bulkLoop; i++)
 	{
@@ -96,8 +101,19 @@ static void waithax_setRefCount(Handle handle, u32 value)
 		refCount += 0xFF;
 
 		if(i % 0x10000 == 0)
-			printf("Left: %08lx | i: %08lx | count: %08lx\n", bulkLoop - i, i,
-			refCount);
+		{
+			// use floats first as the ratio has a wide range
+			elapsed = (osGetTime() - startTime) / 1000.0f;
+			left = ((float) bulkLoop / i - 1) * elapsed;
+			// truncate to int for display on separate lines to avoid a messy printf
+			timeLeft = (long long int) left;
+			timeElapsed = (long long int) elapsed;
+			printf("\x1b[8;0HLeft: %08lx | i: %08lx | count: %08lx\n", bulkLoop - i, i,
+				refCount);
+			printf("\x1b[9;0HTime Left: %02lluh%02llum%02llus Elapsed: %02lluh%02llum%02llus\n",
+				timeLeft / 3600, (timeLeft % 3600) / 60, timeLeft % 60,
+				timeElapsed / 3600, (timeElapsed % 3600) / 60, timeElapsed % 60);
+		}
 	}
 
 	handles[1] = 0xDEADDEAD;
@@ -106,7 +122,7 @@ static void waithax_setRefCount(Handle handle, u32 value)
 		res = svcWaitSynchronizationN(&out, handles, 2, true, 0);
 		refCount++;
 
-		printf("Left: %08lx | i: %08lx | count: %08lx\n", individualLoop - i, i,
+		printf("\x1b[8;0HLeft: %08lx | i: %08lx | count: %08lx\n", individualLoop - i, i,
 			refCount);
 	}
 }
