@@ -1,6 +1,6 @@
 # slowhax / waithax
 
-Implementation of the slowhax / waithax ARM11 kernel exploit.
+This is Mrrraou's implementation of the slowhax / waithax ARM11 kernel exploit with a "time left and elapsed" display added.
 Kind of intended as a reference implementation, sort of based on [Steveice10's memchunkhax2 implementation](https://github.com/Steveice10/memchunkhax2/).
 Definitely does not look the cleanest possible, feel free to contribute.
 
