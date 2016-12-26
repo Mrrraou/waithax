@@ -38,6 +38,7 @@ Takes around 25 minutes for New3DS (should), and around 1 hour and 10 minutes fo
  - Steveice10 for the memchunkhax2 implementation
  - AuroraWright/TuxSH for Luma3DS and its exception handlers, Subv/cell9 for the SVC access check patches which were extensively used for development
  - TuxSH for finding the KSyncObject address leaking used in memchunkhax2, Kernel11 RE and lots of more stuff
+ - shchmue for implementing the ETA display
  - if I missed anyone in there please tell me
 
 ## License
