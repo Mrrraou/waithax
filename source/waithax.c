@@ -122,7 +122,7 @@ static void waithax_setRefCount(Handle handle, u32 value)
 		res = svcWaitSynchronizationN(&out, handles, 2, true, 0);
 		refCount++;
 
-		printf("\x1b[8;0HLeft: %08lx | i: %08lx | count: %08lx\n", bulkLoop - i, i,
+		printf("\x1b[8;0HLeft: %08lx | i: %08lx | count: %08lx\n", individualLoop - i, i,
 			refCount);
 	}
 }
