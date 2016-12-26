@@ -72,7 +72,7 @@ static void waithax_setRefCount(Handle handle, u32 value)
     s64 outInfo;
     Result res = svcGetHandleInfo(&outInfo, handle, 1);
     u32 refCount = outInfo & 0xFFFFFFFF;
-    printf("Handle %08lx, count: %08lx, res %08lx\n", handle, refCount, res);
+    printf("Handle %08lx, count: %08lx, res %08lx\n\n", handle, refCount, res);
 
     if(refCount == value)
         return;
@@ -92,6 +92,7 @@ static void waithax_setRefCount(Handle handle, u32 value)
 
     // The time retrieved by osGetTime is in milliseconds
     u64 startTime = osGetTime();
+    u64 lastTime = osGetTime();
 
     // How many seconds are left and how many have elapsed
     float left, elapsed;
@@ -101,19 +102,27 @@ static void waithax_setRefCount(Handle handle, u32 value)
         res = svcWaitSynchronizationN(&out, handles, 0x100, true, 0);
         refCount += 0xFF;
 
-        if(i % 0x10000 == 0)
+        if((i & 0xFFFF) == 0)
         {
             elapsed = (osGetTime() - startTime) / 1000.0f;
             left = ((float) bulkLoop / i - 1) * elapsed;
 
             u64 timeElapsed = (u64)elapsed;
             u64 timeLeft = (u64)left;
+            u64 timeDifference = (osGetTime() - lastTime) / 1000;
 
-            printf("\x1b[8;0HLeft: %08lx | i: %08lx | count: %08lx\n",
+            printf("\x1b[9;0HLeft: %08lx | i: %08lx | count: %08lx\n",
                 bulkLoop - i, i, refCount);
-            printf("\x1b[9;0HETA: %02lluh%02llum%02llus | Elapsed: %02lluh%02llum%02llus\n",
+            printf("\x1b[10;0HETA: %02lluh%02llum%02llus | Elapsed: %02lluh%02llum%02llus\n",
                 timeLeft / 3600, (timeLeft % 3600) / 60, timeLeft % 60,
                 timeElapsed / 3600, (timeElapsed % 3600) / 60, timeElapsed % 60);
+            printf("\x1b[11;0HSeconds between updates: %lld (%s speed)  ",
+                timeDifference,
+                (timeDifference == 0
+                ? "unknown"
+                : timeDifference < 10 ? "New3DS" : "Old3DS"));
+
+            lastTime = osGetTime();
         }
     }
 
