@@ -113,10 +113,6 @@ static void waithax_setRefCount(Handle handle, u32 value)
 			printf("\x1b[9;0HTime Left: %02lluh%02llum%02llus Elapsed: %02lluh%02llum%02llus\n",
 				timeLeft / 3600, (timeLeft % 3600) / 60, timeLeft % 60,
 				timeElapsed / 3600, (timeElapsed % 3600) / 60, timeElapsed % 60);
-
-			gfxFlushBuffers();
-			gfxSwapBuffers();
-			gspWaitForVBlank();
 		}
 	}
 
@@ -128,10 +124,6 @@ static void waithax_setRefCount(Handle handle, u32 value)
 
 		printf("\x1b[8;0HLeft: %08lx | i: %08lx | count: %08lx\n", bulkLoop - i, i,
 			refCount);
-
-		gfxFlushBuffers();
-		gfxSwapBuffers();
-		gspWaitForVBlank();
 	}
 }
 
