@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "waithax.h"
+#include "utils.h"
 
 
 // Shamelessly copied from
@@ -23,15 +24,56 @@
 #define KTHREAD_THREADPAGEPTR_OFFSET (0x8C)
 #define KSVCTHREADAREA_BEGIN_OFFSET  (0xC8)
 
+#define EXC_VA_START                 ((u32*)0xFFFF0000)
+#define EXC_SVC_VENEER_BRANCH        ((u32*)0xFFFF0008)
 
-static bool g_is_new3ds = 0;
-static u32 g_original_pid;
+// Take note that this is not correct for all firmwares. But I don't want to
+// support very old firmwares when there are already better exploits for them.
+#define AXIWRAMDSP_RW_MAPPING_OFFSET (0xDFF00000 - 0x1FF00000)
 
-static void K_PatchPID(void)
+
+static bool g_is_new3ds = false;
+static u32 g_original_pid = 0;
+static u32 *g_svc_table = NULL;
+static u32 g_svcbackdoor_reimplement_result = 0;
+static void *g_svcbackdoor_address = NULL;
+
+static void K_ReimplementSvcBackdoor(void)
 {
     // Turn interrupts off
     __asm__ volatile("cpsid aif");
 
+    u32 **svcVeneer = decodeARMBranch(EXC_SVC_VENEER_BRANCH);
+    u32 *svcHandler = svcVeneer[2];
+    u32 *svcTable = svcHandler;
+
+    // Searching for svc 0
+    while(*++svcTable);
+    g_svc_table = svcTable;
+
+    // Already implemented ? (or fw too old?)
+    if(svcTable[0x7b])
+    {
+        g_svcbackdoor_reimplement_result = 2;
+        g_svcbackdoor_address = (void*)svcTable[0x7b];
+        return;
+    }
+
+    // No 0x7b, let's reimplement it then
+    u32 *freeSpace = EXC_VA_START;
+    while(freeSpace[0] != 0xFFFFFFFF || freeSpace[1] != 0xFFFFFFFF)
+        freeSpace++;
+
+    u32 *freeSpaceRW = convertVAToPA(freeSpace) + AXIWRAMDSP_RW_MAPPING_OFFSET;
+    memcpy(freeSpaceRW, svcBackdoor_original, svcBackdoor_original_size);
+    g_svcbackdoor_address = freeSpaceRW;
+    g_svcbackdoor_reimplement_result = 1;
+
+    flushEntireCaches();
+}
+
+static void K_PatchPID(void)
+{
     u8 *proc = CURRENT_KPROCESS;
     u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
 
@@ -43,9 +85,6 @@ static void K_PatchPID(void)
 
 static void K_RestorePID(void)
 {
-    // Turn interrupts off
-    __asm__ volatile("cpsid aif");
-
     u8 *proc = CURRENT_KPROCESS;
     u32 *pidPtr = (u32*)(proc + OLDNEW(KPROCESS_PID_OFFSET));
 
@@ -55,6 +94,9 @@ static void K_RestorePID(void)
 
 static void K_PatchACL(void)
 {
+    // Turn interrupts off
+    __asm__ volatile("cpsid aif");
+
     // Patch the process first (for newly created threads).
     u8 *proc = CURRENT_KPROCESS;
     u8 *procacl = proc + OLDNEW(KPROCESS_ACL_START);
@@ -71,7 +113,7 @@ static void K_PatchACL(void)
 void initsrv_allservices(void)
 {
     printf("Patching PID\n");
-    waithax_backdoor(K_PatchPID);
+    svc_7b(K_PatchPID);
 
     printf("Reiniting srv:\n");
     srvExit();
@@ -83,7 +125,7 @@ void initsrv_allservices(void)
     return;
 
     printf("Restoring PID\n");
-    waithax_backdoor(K_RestorePID);
+    svc_7b(K_RestorePID);
 }
 
 void patch_svcaccesstable(void)
@@ -123,7 +165,7 @@ int main(int argc, char **argv)
     // Uncomment this to use svcBackdoor instead of waiting for the refcount to
     // be overflown. This needs svcBackdoor to be re-implemented on 11.0+ and
     // the SVC access tables or table checks to be patched.
-    //waithax_debug(true);
+    waithax_debug(true);
 
     // Run the exploit
     printf("Running exploit\n\n");
@@ -133,8 +175,23 @@ int main(int argc, char **argv)
     if(!success)
         goto end;
 
-    initsrv_allservices();
+    printf("Reimplementing svcBackdoor...\n");
+    waithax_backdoor(K_ReimplementSvcBackdoor);
+
+    if(!g_svcbackdoor_reimplement_result)
+    {
+        printf("Could not reimplement svcBackdoor :(\n");
+        goto end;
+    }
+
+    printf(g_svcbackdoor_reimplement_result == 1
+        ? "svcBackdoor successfully implemented\n"
+        : "svcBackdoor already implemented\n");
+    printf("Location: %08lx\n", (u32)g_svcbackdoor_address);
+    printf("SVC table: %08lx\n", (u32)g_svc_table);
+
     patch_svcaccesstable();
+    initsrv_allservices();
 
     printf("Cleaning up\n");
     waithax_cleanup();
