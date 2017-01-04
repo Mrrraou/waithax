@@ -15,11 +15,13 @@ No one really seemed to care about doing it apparently...
 
 Use [the latest release](https://github.com/Mrrraou/waithax/releases) or build the app yourself.
 
-Then, run the .3dsx, wait for the exploit to be done, and run your homebrew of choice that needs elevated privileges (can be yellows8's 3ds_dsiwarehax_installer, for example).
+Then, run the .3dsx, wait for the exploit to be done, and run your homebrew of choice that needs elevated privileges (can be yellows8's 3ds_dsiwarehax_installer or cell9's NTR CFW, for example).
 
 If you are getting a freeze/crash on the Homebrew Launcher when running it, please update your Homebrew Launcher.
 
 ## How to use, for developers
+
+*__NOTE:__ including kernel exploits into your application or exploit is not recommended. The built 3dsx reimplements svcBackdoor and patches the current KProcess SVC ACL. You should consider using svcBackdoor instead.*
 
 Please check the `main.c` file in the `source` folder for information on how to use this implementation in your own application.
 If you want to use this as a library, you just need `waithax.c`, `utils.s` and their headers.
