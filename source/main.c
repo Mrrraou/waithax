@@ -65,8 +65,10 @@ static void K_ReimplementSvcBackdoor(void)
         freeSpace++;
 
     u32 *freeSpaceRW = convertVAToPA(freeSpace) + AXIWRAMDSP_RW_MAPPING_OFFSET;
+    u32 *svcTableRW = convertVAToPA(svcTable) + AXIWRAMDSP_RW_MAPPING_OFFSET;
     memcpy(freeSpaceRW, svcBackdoor_original, svcBackdoor_original_size);
-    g_svcbackdoor_address = freeSpaceRW;
+    svcTableRW[0x7b] = (u32)freeSpace;
+    g_svcbackdoor_address = freeSpace;
     g_svcbackdoor_reimplement_result = 1;
 
     flushEntireCaches();
@@ -165,7 +167,7 @@ int main(int argc, char **argv)
     // Uncomment this to use svcBackdoor instead of waiting for the refcount to
     // be overflown. This needs svcBackdoor to be re-implemented on 11.0+ and
     // the SVC access tables or table checks to be patched.
-    waithax_debug(true);
+    //waithax_debug(true);
 
     // Run the exploit
     printf("Running exploit\n\n");
