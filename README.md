@@ -24,9 +24,11 @@ If you are getting a freeze/crash on the Homebrew Launcher when running it, plea
 *__NOTE:__ The kernel exploit should not be implemented into your application, to ensure future compatibility and to make updating your application unneeded if the exploit code is updated.*
 
 In order to ensure compatibility, `svcBackdoor` (SVC 0x7B) will also be reimplemented into `svcSendSyncRequest3` (SVC 0x30).
-This was agreed upon as a "standard" for Kernel11 exploits, as SVC 0x30 is a stubbed SVC comand and should be accessible by most userland applications, including `dlplay`, which \*hax runs under.
+This was agreed upon as a "standard" for Kernel11 exploits, as SVC 0x30 is a stubbed SVC command and should be accessible by most userland applications, including `dlplay`, which \*hax runs under.
 
-In order for your application to be compatible with this, I will be giving you code snippets in order to gain privileges you will need inside your homebrew or exploit, and to check if you have access to the SVC 0x30 global backdoor. You can find snippets and usage examples [here](https://gist.github.com/Mrrraou/c74572c04d13c586d363bf64eba0d3a1).
+In order for your application to be compatible with this, I will be giving you code snippets in order to gain privileges you will need inside your homebrew or exploit, and to check if you have access to the SVC 0x30 global backdoor.
+
+You can find snippets and usage examples [here](https://gist.github.com/Mrrraou/c74572c04d13c586d363bf64eba0d3a1).
 
 ## Estimated time for running the exploit
 
