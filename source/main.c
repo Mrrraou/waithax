@@ -46,9 +46,11 @@ static void K_ReimplementSvcBackdoor(void)
     u32 **svcVeneer = decodeARMBranch(EXC_SVC_VENEER_BRANCH);
     u32 *svcHandler = svcVeneer[2];
     u32 *svcTable = svcHandler;
+    u32 *svcTableRW;
 
     // Searching for svc 0
     while(*++svcTable);
+    svcTableRW = convertVAToPA(svcTable) + AXIWRAMDSP_RW_MAPPING_OFFSET;
     g_svc_table = svcTable;
 
     // Already implemented ? (or fw too old?)
@@ -56,6 +58,7 @@ static void K_ReimplementSvcBackdoor(void)
     {
         g_svcbackdoor_reimplement_result = 2;
         g_svcbackdoor_address = (void*)svcTable[0x7b];
+        svcTableRW[0x30] = svcTable[0x7b];
         return;
     }
 
@@ -65,9 +68,9 @@ static void K_ReimplementSvcBackdoor(void)
         freeSpace++;
 
     u32 *freeSpaceRW = convertVAToPA(freeSpace) + AXIWRAMDSP_RW_MAPPING_OFFSET;
-    u32 *svcTableRW = convertVAToPA(svcTable) + AXIWRAMDSP_RW_MAPPING_OFFSET;
     memcpy(freeSpaceRW, svcBackdoor_original, svcBackdoor_original_size);
     svcTableRW[0x7b] = (u32)freeSpace;
+    svcTableRW[0x30] = (u32)freeSpace;
     g_svcbackdoor_address = freeSpace;
     g_svcbackdoor_reimplement_result = 1;
 
@@ -96,9 +99,6 @@ static void K_RestorePID(void)
 
 static void K_PatchACL(void)
 {
-    // Turn interrupts off
-    __asm__ volatile("cpsid aif");
-
     // Patch the process first (for newly created threads).
     u8 *proc = CURRENT_KPROCESS;
     u8 *procacl = proc + OLDNEW(KPROCESS_ACL_START);
@@ -121,11 +121,6 @@ void initsrv_allservices(void)
     srvExit();
     srvInit();
 
-    // Not restoring the PID because we want it to stay like this if the next
-    // started homebrew reinits srv or something similar.
-    // Comment this return if you want/need to restore the PID.
-    return;
-
     printf("Restoring PID\n");
     svc_7b(K_RestorePID);
 }
@@ -133,7 +128,7 @@ void initsrv_allservices(void)
 void patch_svcaccesstable(void)
 {
     printf("Patching SVC access table\n");
-    waithax_backdoor(K_PatchACL);
+    svc_30(K_PatchACL);
 }
 
 int main(int argc, char **argv)

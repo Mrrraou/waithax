@@ -66,6 +66,27 @@ svcBackdoor_original:
 svcBackdoor_original_end:
 
 
+.global svc_30
+.type   svc_30, %function
+svc_30:
+    push {r0, r1, r2}
+    mov r3, sp
+    add r0, pc, #12
+    svc 0x30
+    add sp, sp, #8
+    ldr r0, [sp], #4
+    bx lr
+    cpsid aif
+    ldr r2, [r3], #4
+    ldmfd r3!, {r0, r1}
+    push {r3, lr}
+    blx r2
+    pop {r3, lr}
+    str r0, [r3, #-4]!
+    mov r0, #0
+    bx lr
+
+
 .global svc_7b
 .type   svc_7b, %function
 svc_7b:
