@@ -21,14 +21,12 @@ If you are getting a freeze/crash on the Homebrew Launcher when running it, plea
 
 ## How to use, for developers
 
-*__NOTE:__ including kernel exploits into your application or exploit is not recommended. The built 3dsx reimplements svcBackdoor and patches the current KProcess SVC ACL. You should consider using svcBackdoor instead.*
+*__NOTE:__ The kernel exploit should not be implemented into your application, to ensure future compatibility and to make updating your application unneeded if the exploit code is updated.*
 
-Please check the `main.c` file in the `source` folder for information on how to use this implementation in your own application.
-If you want to use this as a library, you just need `waithax.c`, `utils.s` and their headers.
+In order to ensure compatibility, `svcBackdoor` (SVC 0x7B) will also be reimplemented into `svcSendSyncRequest3` (SVC 0x30).
+This was agreed upon as a "standard" for Kernel11 exploits, as SVC 0x30 is a stubbed SVC comand and should be accessible by most userland applications, including `dlplay`, which \*hax runs under.
 
-Take note that this implementation does not patch the SVC call access table, nor the process PID on its own.
-However, an helper method is given to run your own kernel mode code after running the exploit.
-This method *sort of* acts like svcBackdoor; but the given code will be run with the SVC-mode stack, instead of the userland caller thread stack.
+In order for your application to be compatible with this, I will be giving you code snippets in order to gain privileges you will need inside your homebrew or exploit, and to check if you have access to the SVC 0x30 global backdoor. You can find snippets and usage examples [here](https://gist.github.com/Mrrraou/c74572c04d13c586d363bf64eba0d3a1).
 
 ## Estimated time for running the exploit
 
